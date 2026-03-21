@@ -1,0 +1,67 @@
+{
+  "summary": "Backend API regression and frontend E2E executed on preview URL. Core flows work (demo, navigation, manual multi-facture association with imported data, export trigger). Two backend issues found in validation/date parsing.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/reconciliation/manual-match",
+        "issue": "Accepts invalid bank_entry_id/invoice_ids and still returns 200 with success activity \"Association manuelle ajoutée\" (silent no-op).",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "/api/reconciliation/import/invoices",
+        "issue": "ISO dates (YYYY-MM-DD) are misparsed (e.g., 2025-02-03 -> 2025-03-02, 2025-02-12 -> 2025-12-02), impacting matching logic based on due dates.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Demo -> Reconciliation -> Manual association",
+        "issue": "Demo dataset auto-consumes credit entries, so manual association is often not actionable without importing custom data.",
+        "affected_selectors": [
+          "[data-testid='create-manual-match-button']",
+          "[data-testid='selected-bank-remaining']"
+        ]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Résultats",
+        "issues": [
+          "Typo in title text: \"Factures rapprochées, partielles ouen attente\" (missing space)."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reconciliation_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Add strict validation in /api/reconciliation/manual-match: return 400 when bank entry does not exist, invoice_ids are invalid, or selected bank entry has no remaining credit.",
+    "Fix parse_date behavior in reconciliation_engine.py for already-ISO dates (avoid day/month inversion when input is YYYY-MM-DD).",
+    "Adjust demo dataset (or demo state) so at least one unresolved credit remains for manual multi-invoice UX demonstration.",
+    "Fix typo on results page heading text."
+  ],
+  "critical_code_review_comments": [
+    "parse_date() uses pandas with dayfirst=True for all formats; this causes incorrect conversion of ISO-formatted strings and degrades reconciliation accuracy.",
+    "Manual-match endpoint lacks entity/state validation and can log a success activity despite not creating an effective match."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reconciliation_api.py",
+    "/app/tests/data/date_parse_probe.csv",
+    "/app/test_reports/iteration_1.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "90%"
+  },
+  "seed_data_creation": "Created temporary test imports via UI/API (UI-INV-* and DATE-PROBE-* rows).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Pytest API suite passed for target endpoints. UI manual multi-invoice flow works when using custom imports (not with current demo state). Re-verify after fixing date parsing and manual-match validation.",
+  "rca of the issue": "RCA1: Date inversion comes from parse_date(value) calling pandas.to_datetime(..., dayfirst=True) unconditionally; ISO strings are interpreted as DD/MM in some cases. Mitigation: detect ISO pattern first and parse with strict format '%Y-%m-%d' before fallback parsing. RCA2: /manual-match route only checks invoice_ids non-empty; add_manual_link + recalculate can silently ignore invalid IDs/fully consumed bank entries, but activity still records success. Mitigation: validate bank entry exists + has remaining_amount > 0, validate invoice IDs exist and are open, return 400 on invalid requests."
+}

@@ -1,0 +1,43 @@
+{
+  "summary": "Executed backend pytest regression (10 tests) and public-URL UI integration flow for PDF imports, reconciliation, multi-currency metrics, and CSV export. Core requested flows are working.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/reconciliation/import/bank",
+        "issue": "Latent bug from code review: pdf_extraction_service.build_prompt() returns invoice prompt unconditionally; scanned bank-statement OCR fallback can receive wrong extraction schema.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reconciliation_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix build_prompt() in /app/backend/pdf_extraction_service.py with explicit dataset == 'bank' branch so scanned bank PDFs use the bank-statement JSON schema prompt.",
+    "After fix, retest scanned bank PDF OCR fallback path (API + UI if fixture available) to confirm no wrong-schema extraction."
+  ],
+  "critical_code_review_comments": [
+    "In /app/backend/pdf_extraction_service.py, build_prompt() contains an early return and an unreachable second return block; bank prompt logic is never reached.",
+    "This issue is masked for text PDFs because heuristic extraction often succeeds before OCR fallback."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reconciliation_api.py",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {
+    "backend": "95%",
+    "frontend": "100%"
+  },
+  "seed_data_creation": "Used existing persistent fixtures: /app/tests/data/facture_text_mad.pdf, /app/tests/data/releve_text_mad.pdf, /app/tests/data/facture_scan_mad.pdf.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest passes 10/10 including fixture-based text/scanned PDF tests. Public URL UI flow passed for import -> auto-reconciliation -> MAD/EUR metrics -> export trigger. Remaining risk area is scanned bank PDF OCR fallback due prompt-branch bug in code.",
+  "rca of the issue": "RCA: build_prompt() currently always returns invoice-oriented instructions because the bank-statement prompt block is unreachable. Reproduction path: submit scanned bank PDF where local text heuristic fails, forcing OCR fallback. The LLM may return invoice-shaped rows, causing parsing failures or degraded extraction for /api/reconciliation/import/bank. Mitigation: split build_prompt() into explicit invoices/bank branches and add unit/API regression for scanned bank OCR fallback."
+}

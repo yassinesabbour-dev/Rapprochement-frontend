@@ -1,0 +1,2 @@
+invoice_number,customer_name,issue_date,due_date,amount
+DATE-PROBE-001,Probe Client,2025-02-03,2025-02-12,100
