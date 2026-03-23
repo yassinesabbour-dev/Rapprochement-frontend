@@ -5,7 +5,7 @@ const API = `${BACKEND_URL}/api`;
 
 const client = axios.create({
   baseURL: API,
-  timeout: 20000,
+  timeout: 120000,
 });
 
 export const exportUrl = `${API}/reconciliation/export.csv`;
