@@ -68,7 +68,7 @@ export const UploadPanel = ({ dataset, title, description, count, columns, busy,
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="inline-flex items-center gap-2 text-sm text-muted-foreground" data-testid={`${dataset}-upload-file-name`}>
               <ShieldCheck className="h-4 w-4 text-primary" />
-              {file ? file.name : "Aucun fichier sélectionné pour l'instant."}
+              {files.length > 0 ? files.map(f => f.name).join(", ") : "Aucun fichier."}
             </div>
             <Button className="rounded-none px-8" data-testid={`${dataset}-upload-submit-button`} disabled={files.length === 0 || busy} type="submit">
               Importer maintenant
