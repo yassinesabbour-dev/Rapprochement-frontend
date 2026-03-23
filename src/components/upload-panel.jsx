@@ -6,13 +6,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export const UploadPanel = ({ dataset, title, description, count, columns, busy, onUpload }) => {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!file) return;
-    await onUpload(dataset, file);
-    setFile(null);
+    if (files.length === 0) return;
+    for (const f of files) {
+      await onUpload(dataset, f);
+    }
+    setFiles([]);
     event.target.reset();
   };
 
@@ -54,9 +56,10 @@ export const UploadPanel = ({ dataset, title, description, count, columns, busy,
               </div>
               <Input
                 accept=".csv,.xlsx,.xls,.json,.pdf"
+                multiple
                 className="max-w-full rounded-none border-border bg-white md:max-w-[280px]"
                 data-testid={`${dataset}-upload-input`}
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
+                onChange={(event) => setFiles(Array.from(event.target.files || []))}
                 type="file"
               />
             </div>
@@ -67,7 +70,7 @@ export const UploadPanel = ({ dataset, title, description, count, columns, busy,
               <ShieldCheck className="h-4 w-4 text-primary" />
               {file ? file.name : "Aucun fichier sélectionné pour l'instant."}
             </div>
-            <Button className="rounded-none px-8" data-testid={`${dataset}-upload-submit-button`} disabled={!file || busy} type="submit">
+            <Button className="rounded-none px-8" data-testid={`${dataset}-upload-submit-button`} disabled={files.length === 0 || busy} type="submit">
               Importer maintenant
             </Button>
           </div>
